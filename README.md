@@ -29,7 +29,7 @@ This project implements an end-to-end MLOps pipeline to predict whether a custom
 └── README.md                   # Project documentation
 ```
 
-## 🚀 Deployment Instructions
+## Deployment Instructions
 
 ### 1. Hugging Face Dataset (Manual Step)
 You must manually upload your **raw dataset** to Hugging Face **once** to start the cycle.
