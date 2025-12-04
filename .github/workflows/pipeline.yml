@@ -1,0 +1,129 @@
+name: MLOps Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  data-prep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        
+      - name: Run data preprocessing script
+        run: python src/data_prep.py
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          
+      # Upload processed data so the next job can use it
+      - name: Upload processed data
+        uses: actions/upload-artifact@v4
+        with:
+          name: processed-data
+          path: .github/workflows/tourism_project/data/
+
+  train-and-eval:
+    needs: data-prep
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        
+      # Download data from previous job
+      - name: Download processed data
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data
+          path: .github/workflows/tourism_project/data/
+        
+      - name: Run training and evaluation script
+        run: python src/train.py
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          
+      # Upload model so deploy job can use it
+      - name: Upload model
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model
+          path: models/
+
+  deploy:
+    needs: train-and-eval
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: pip install huggingface_hub
+        
+      # Download model from previous job
+      - name: Download trained model
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: models/
+      
+      - name: Deploy to Hugging Face Space
+        run: |
+          cd src
+          python deploy_space.py
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          
+  auto-push-generated-changes:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Download artifacts to commit them to repo (optional, but requested)
+      - name: Download processed data
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data
+          path: .github/workflows/tourism_project/data/
+          
+      - name: Download trained model
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: models/
+      
+      - name: Commit and push generated files if any
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git diff --cached --quiet || git commit -m "CI: Auto update generated files"
+          git push origin main

@@ -1,0 +1,18 @@
+# Data
+data/
+*.csv
+
+# Models
+models/
+*.joblib
+
+# Environment
+.env
+.venv
+venv/
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
