@@ -11,18 +11,6 @@ HF_MODEL_REPO = f"{HF_USERNAME}/Tourism-Package-Predictor"
 HF_DATASET_REPO = f"{HF_USERNAME}/Tourism" 
 LOG_FILENAME = "prediction_logs.csv"
 
-# Custom Image Logic
-image_path = None
-potential_images = ["banner.jpg", "banner.png", "travel_image.jpg", "travel_image.png"]
-for img in potential_images:
-    if os.path.exists(img):
-        image_path = img
-        break
-
-if image_path:
-    st.image(image_path, use_column_width=True)
-else:
-    pass
 
 st.title("Wellness Tourism Package Prediction")
 st.write("Enter customer details to predict if they will purchase the package.")
