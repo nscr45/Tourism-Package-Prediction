@@ -14,7 +14,7 @@ import json
 from huggingface_hub import HfApi, HfFolder, hf_hub_download
 
 # Configuration
-HF_USERNAME = "Sricharan451706" # User to replace this
+HF_USERNAME = "Sricharan451706"
 HF_DATASET_REPO = f"{HF_USERNAME}/Tourism"
 HF_MODEL_REPO = f"{HF_USERNAME}/Tourism-Package-Predictor"
 
@@ -57,9 +57,15 @@ def train_model():
             ('cat', categorical_transformer, categorical_cols)
         ])
 
+    # Calculate scale_pos_weight for imbalance handling
+    neg_count = (y_train == 0).sum()
+    pos_count = (y_train == 1).sum()
+    scale_pos_weight = neg_count / pos_count
+    print(f"Class Imbalance Detected. Using scale_pos_weight: {scale_pos_weight:.2f}")
+
     # Model parameters
     print(f"Defining XGBoost Model...")
-    xgb_model = XGBClassifier(random_state=42, eval_metric='logloss')
+    xgb_model = XGBClassifier(random_state=42, eval_metric='logloss', scale_pos_weight=scale_pos_weight)
     
     # Create pipeline
     pipeline = Pipeline(steps=[('preprocessor', preprocessor),
@@ -142,20 +148,47 @@ def train_model():
     print("Best model pipeline saved locally.")
     
     return best_pipeline, accuracy
+
+def get_token():
+    # 1. Try environment variable
+    token = os.environ.get("HF_TOKEN")
+    if token:
+        return token
+    
+    # 2. Try local secrets.toml (relative to this script)
+    try:
+        # Go up one level from src/ to root, then into .streamlit/
+        secrets_path = os.path.join(os.path.dirname(__file__), "../.streamlit/secrets.toml")
+        if os.path.exists(secrets_path):
+            with open(secrets_path, "r") as f:
+                for line in f:
+                    if "HF_TOKEN" in line:
+                        # Parse: HF_TOKEN = "hf_..."
+                        parts = line.split("=")
+                        if len(parts) == 2:
+                            return parts[1].strip().strip('"').strip("'")
+    except Exception as e:
+        print(f"Error reading secrets: {e}")
+        pass
+    
+    # 3. Try Hugging Face CLI login
+    return HfFolder.get_token()
+
 def upload_model_to_hf():
     print("Uploading model to Hugging Face...")
     api = HfApi()
-    token = HfFolder.get_token()
+    token = get_token()
     
     if token:
         try:
-            api.create_repo(repo_id=HF_MODEL_REPO, exist_ok=True)
+            api.create_repo(repo_id=HF_MODEL_REPO, exist_ok=True, token=token)
             
             # Upload Model
             api.upload_file(
                 path_or_fileobj="models/model.joblib",
                 path_in_repo="model.joblib",
-                repo_id=HF_MODEL_REPO
+                repo_id=HF_MODEL_REPO,
+                token=token
             )
             
             # Upload Experiment Log
@@ -163,15 +196,18 @@ def upload_model_to_hf():
                 api.upload_file(
                     path_or_fileobj="models/experiment_log.json",
                     path_in_repo="experiment_log.json",
-                    repo_id=HF_MODEL_REPO
+                    repo_id=HF_MODEL_REPO,
+                    token=token
                 )
                 
             print(f"Model and logs uploaded/updated in {HF_MODEL_REPO}")
         except Exception as e:
             print(f"Failed to upload model: {e}")
     else:
-        print("Hugging Face token not found. Please login.")
+        print("Hugging Face token not found. Please login or add HF_TOKEN to .streamlit/secrets.toml")
 
 if __name__ == "__main__":
     train_model()
     upload_model_to_hf()
+
+
