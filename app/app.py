@@ -1,14 +1,15 @@
-%%writefile app/app.py
 import streamlit as st
 import pandas as pd
 import joblib
 import numpy as np
 import os
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download, HfApi
 
 # Configuration
 HF_USERNAME = "Sricharan451706"
 HF_MODEL_REPO = f"{HF_USERNAME}/Tourism-Package-Predictor"
+HF_DATASET_REPO = f"{HF_USERNAME}/Tourism" 
+LOG_FILENAME = "prediction_logs.csv"
 
 # Custom Image Logic
 image_path = None
@@ -29,7 +30,7 @@ st.write("Enter customer details to predict if they will purchase the package.")
 @st.cache_resource
 def load_model():
     try:
-        # loading locally first for development
+        # Try loading locally first for development
         model = joblib.load("models/model.joblib")
         print("Loaded model locally.")
         return model
@@ -37,15 +38,16 @@ def load_model():
         print(f"Local load failed: {e}. Trying Hugging Face...")
         # Load from Hugging Face
         try:
-            # Getting token from secrets
+            # Try getting token from secrets (Streamlit Cloud) or env var
             token = os.environ.get("HF_TOKEN")
             
             if not token:
                 try:
-                    # Checks if secrets are available
+                    # Check if secrets are available (this raises error if no secrets.toml exists)
                     if "HF_TOKEN" in st.secrets:
                         token = st.secrets["HF_TOKEN"]
                 except FileNotFoundError:
+                    # Secrets file doesn't exist, which is fine for local dev if env var is set or repo is public
                     pass
                 except Exception:
                     pass
@@ -57,6 +59,52 @@ def load_model():
             st.error(f"Error loading model: {e}")
             st.info("If the model repo is Private, make sure to add 'HF_TOKEN' to your Space Secrets (or local .streamlit/secrets.toml).")
             return None
+
+def save_prediction(input_data, prediction, probability):
+    """
+    Saves the input data and prediction result to a CSV file on Hugging Face.
+    """
+    # 1. Get Token
+    token = os.environ.get("HF_TOKEN")
+    if not token and "HF_TOKEN" in st.secrets:
+        token = st.secrets["HF_TOKEN"]
+        
+    if not token:
+        print("No token found. Skipping log save.")
+        return
+
+    try:
+        api = HfApi(token=token)
+        
+        # 2. Add prediction metadata
+        log_entry = input_data.copy()
+        log_entry['Prediction'] = prediction
+        log_entry['Probability'] = probability
+        log_entry['Timestamp'] = pd.Timestamp.now()
+
+        # 3. Download existing log file (if exists)
+        updated_log = None
+        try:
+            log_path = hf_hub_download(repo_id=HF_DATASET_REPO, filename=LOG_FILENAME, repo_type="dataset", token=token)
+            existing_log = pd.read_csv(log_path)
+            updated_log = pd.concat([existing_log, log_entry], ignore_index=True)
+        except Exception:
+            # File likely doesn't exist yet
+            updated_log = log_entry
+
+        # 4. Save and Upload
+        updated_log.to_csv(LOG_FILENAME, index=False)
+        
+        api.upload_file(
+            path_or_fileobj=LOG_FILENAME,
+            path_in_repo=LOG_FILENAME,
+            repo_id=HF_DATASET_REPO,
+            repo_type="dataset"
+        )
+        print("Prediction logged successfully.")
+        
+    except Exception as e:
+        print(f"Failed to log prediction: {e}")
 
 model = load_model()
 
@@ -113,7 +161,6 @@ if model:
         })
         
         # Make prediction using the pipeline
-        # The pipeline handles encoding and scaling automatically
         try:
             prediction = model.predict(input_data)[0]
             probability = model.predict_proba(input_data)[0][1]
@@ -122,7 +169,10 @@ if model:
                 st.success(f"Prediction: Will Purchase (Probability: {probability:.2f})")
             else:
                 st.warning(f"Prediction: Will Not Purchase (Probability: {probability:.2f})")
+                
+            # Log the prediction
+            save_prediction(input_data, prediction, probability)
+            
         except Exception as e:
             st.error(f"Prediction Error: {e}")
             st.info("Ensure all columns used in training are provided in the input dataframe.")
-
