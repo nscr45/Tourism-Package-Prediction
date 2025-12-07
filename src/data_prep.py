@@ -1,18 +1,13 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from huggingface_hub import HfApi, HfFolder
-import os
-
-import pandas as pd
-from sklearn.model_selection import train_test_split
 from huggingface_hub import HfApi, HfFolder, hf_hub_download
 import os
 import numpy as np
 
 # Configuration
 HF_USERNAME = "Sricharan451706"
-HF_DATASET_REPO = f"{HF_USERNAME}/tourism-package-prediction"
-RAW_DATA_FILENAME = "cleaned_tourism.csv" # Updated to match user's filename
+HF_DATASET_REPO = f"{HF_USERNAME}/Tourism"
+RAW_DATA_FILENAME = "cleaned_tourism.csv" 
 
 def process_and_update_data():
     print("Starting Data Preparation Pipeline...")
@@ -35,17 +30,31 @@ def process_and_update_data():
         df = df.drop(columns=['CustomerID'])
     
     # Handle missing values
-    # Numerical columns: fill with median
-    num_cols = df.select_dtypes(include=['float64', 'int64']).columns
-    for col in num_cols:
-        df[col] = df[col].fillna(df[col].median())
+    if df.isna().any().any():
+    # Numeric columns: fill with median (only if needed)
+        num_cols = df.select_dtypes(include=['float64', 'int64']).columns
+        for col in num_cols:
+            if df[col].isna().any():
+                median_val = df[col].median()
+                df[col] = df[col].fillna(median_val)
+                print(f"  {col}: Filled {df[col].isna().sum()} NaNs with median {median_val}")
         
-    # Categorical columns: fill with mode
-    cat_cols = df.select_dtypes(include=['object']).columns
-    for col in cat_cols:
-        df[col] = df[col].fillna(df[col].mode()[0])
+        # Categorical columns: fill with mode (only if needed)
+        cat_cols = df.select_dtypes(include=['object']).columns
+        for col in cat_cols:
+            if df[col].isna().any():
+                mode_val = df[col].mode()
+                if len(mode_val) > 0:
+                    df[col] = df[col].fillna(mode_val[0])
+                    print(f"  {col}: Filled {df[col].isna().sum()} NaNs with mode '{mode_val[0]}'")
+                else:
+                    df[col] = df[col].fillna('Unknown')
+                    print(f"  {col}: Filled with 'Unknown' (no mode found)")
         
-    print("Data cleaning completed.")
+        print("Data cleaning completed.")
+
+    else:
+        print("Data cleaning completed.")
 
     # 3. Train-Test Split
     print("Splitting data...")
@@ -99,3 +108,5 @@ def process_and_update_data():
 
 if __name__ == "__main__":
     process_and_update_data()
+
+
