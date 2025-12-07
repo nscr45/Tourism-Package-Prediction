@@ -1,12 +1,27 @@
+%%writefile app/app.py
 import streamlit as st
 import pandas as pd
 import joblib
 import numpy as np
+import os
 from huggingface_hub import hf_hub_download
 
 # Configuration
 HF_USERNAME = "Sricharan451706"
 HF_MODEL_REPO = f"{HF_USERNAME}/Tourism-Package-Predictor"
+
+# Custom Image Logic
+image_path = None
+potential_images = ["banner.jpg", "banner.png", "travel_image.jpg", "travel_image.png"]
+for img in potential_images:
+    if os.path.exists(img):
+        image_path = img
+        break
+
+if image_path:
+    st.image(image_path, use_column_width=True)
+else:
+    pass
 
 st.title("Wellness Tourism Package Prediction")
 st.write("Enter customer details to predict if they will purchase the package.")
@@ -14,17 +29,33 @@ st.write("Enter customer details to predict if they will purchase the package.")
 @st.cache_resource
 def load_model():
     try:
-        # Try loading locally first for development
+        # loading locally first for development
         model = joblib.load("models/model.joblib")
+        print("Loaded model locally.")
         return model
-    except:
+    except Exception as e:
+        print(f"Local load failed: {e}. Trying Hugging Face...")
         # Load from Hugging Face
         try:
-            model_path = hf_hub_download(repo_id=HF_MODEL_REPO, filename="model.joblib")
+            # Getting token from secrets
+            token = os.environ.get("HF_TOKEN")
+            
+            if not token:
+                try:
+                    # Checks if secrets are available
+                    if "HF_TOKEN" in st.secrets:
+                        token = st.secrets["HF_TOKEN"]
+                except FileNotFoundError:
+                    pass
+                except Exception:
+                    pass
+                
+            model_path = hf_hub_download(repo_id=HF_MODEL_REPO, filename="model.joblib", token=token)
             model = joblib.load(model_path)
             return model
         except Exception as e:
             st.error(f"Error loading model: {e}")
+            st.info("If the model repo is Private, make sure to add 'HF_TOKEN' to your Space Secrets (or local .streamlit/secrets.toml).")
             return None
 
 model = load_model()
@@ -94,3 +125,4 @@ if model:
         except Exception as e:
             st.error(f"Prediction Error: {e}")
             st.info("Ensure all columns used in training are provided in the input dataframe.")
+
