@@ -1,166 +1,497 @@
-import streamlit as st
-import pandas as pd
-import joblib
-import numpy as np
 import os
-from huggingface_hub import hf_hub_download, HfApi
+from pathlib import Path
 
+import joblib
+import pandas as pd
+import streamlit as st
+from huggingface_hub import HfApi, hf_hub_download
+
+# ---------------------------------------------------------
 # Configuration
+# ---------------------------------------------------------
 HF_USERNAME = "Sricharan451706"
 HF_MODEL_REPO = f"{HF_USERNAME}/Tourism-Package-Predictor"
-HF_DATASET_REPO = f"{HF_USERNAME}/Tourism" 
+HF_DATASET_REPO = f"{HF_USERNAME}/Tourism"
 LOG_FILENAME = "prediction_logs.csv"
+MODEL_PATH = Path("models/model.joblib")
 
+st.set_page_config(
+    page_title="Wellness Tourism | Purchase Predictor",
+    page_icon="✦",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
 
-st.title("Wellness Tourism Package Prediction")
-st.write("Enter customer details to predict if they will purchase the package.")
+# ---------------------------------------------------------
+# Styling
+# ---------------------------------------------------------
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+
+    :root {
+        --ink: #172b35;
+        --muted: #687b83;
+        --teal: #087f8c;
+        --teal-dark: #08636d;
+        --mint: #e8f5f2;
+        --line: #e3eceb;
+        --paper: #f5f8f7;
+        --white: #ffffff;
+    }
+
+    .stApp {
+        background:
+            radial-gradient(circle at 90% 0%, rgba(8,127,140,.09), transparent 28rem),
+            var(--paper);
+        color: var(--ink);
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    [data-testid="stHeader"] { background: transparent; }
+    [data-testid="stMainBlockContainer"] {
+        max-width: 1180px;
+        padding-top: 2.2rem;
+        padding-bottom: 4rem;
+    }
+
+    h1, h2, h3 {
+        font-family: 'Manrope', sans-serif !important;
+        color: var(--ink) !important;
+        letter-spacing: -0.035em;
+    }
+
+    .eyebrow {
+        color: var(--teal);
+        text-transform: uppercase;
+        letter-spacing: .16em;
+        font-size: .72rem;
+        font-weight: 800;
+        margin-bottom: .7rem;
+    }
+
+    .hero-title {
+        font-family: 'Manrope', sans-serif;
+        color: var(--ink);
+        font-size: clamp(2rem, 4vw, 3.25rem);
+        font-weight: 800;
+        line-height: 1.08;
+        letter-spacing: -.055em;
+        max-width: 780px;
+        margin: 0;
+    }
+
+    .hero-copy {
+        color: var(--muted);
+        font-size: 1.04rem;
+        line-height: 1.7;
+        max-width: 700px;
+        margin-top: .9rem;
+    }
+
+    .hero-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        border: 1px solid #cce5e1;
+        background: rgba(255,255,255,.75);
+        color: var(--teal-dark);
+        padding: .42rem .78rem;
+        border-radius: 999px;
+        font-size: .78rem;
+        font-weight: 700;
+        margin-top: 1.25rem;
+    }
+
+    .section-kicker {
+        color: var(--teal);
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+        margin: .15rem 0 .25rem;
+    }
+
+    .section-title {
+        color: var(--ink);
+        font-family: 'Manrope', sans-serif;
+        font-size: 1.22rem;
+        font-weight: 800;
+        letter-spacing: -.025em;
+        margin: 0 0 .25rem;
+    }
+
+    .section-copy {
+        color: var(--muted);
+        font-size: .88rem;
+        margin: 0 0 1.15rem;
+    }
+
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background: var(--white);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: 0 8px 28px rgba(28, 61, 68, .045);
+    }
+
+    [data-testid="stWidgetLabel"] p {
+        color: #304650;
+        font-weight: 600;
+        font-size: .88rem;
+    }
+
+    [data-baseweb="select"] > div,
+    [data-testid="stNumberInput"] input {
+        background: #f8fbfa;
+        border-color: #dce8e6;
+        border-radius: 10px;
+        min-height: 2.8rem;
+    }
+
+    [data-testid="stSlider"] [data-baseweb="slider"] {
+        padding-top: .35rem;
+    }
+
+    div.stButton > button,
+    div[data-testid="stFormSubmitButton"] > button {
+        background: var(--teal);
+        color: white;
+        border: 0;
+        border-radius: 11px;
+        min-height: 3.1rem;
+        padding: .65rem 1.4rem;
+        font-weight: 800;
+        transition: all .18s ease;
+        box-shadow: 0 7px 16px rgba(8,127,140,.18);
+    }
+
+    div.stButton > button:hover,
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background: var(--teal-dark);
+        color: white;
+        border: 0;
+        transform: translateY(-1px);
+    }
+
+    .result-panel {
+        border-radius: 18px;
+        padding: 1.35rem 1.5rem;
+        border: 1px solid var(--line);
+        background: white;
+        margin-top: 1rem;
+    }
+
+    .result-label {
+        text-transform: uppercase;
+        letter-spacing: .12em;
+        font-size: .72rem;
+        font-weight: 800;
+        color: var(--muted);
+    }
+
+    .result-value {
+        font-family: 'Manrope', sans-serif;
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -.04em;
+        margin: .35rem 0;
+    }
+
+    .result-note {
+        color: var(--muted);
+        font-size: .9rem;
+    }
+
+    .footnote {
+        color: #788990;
+        font-size: .78rem;
+        line-height: 1.6;
+        margin-top: 1.4rem;
+    }
+
+    @media (max-width: 700px) {
+        [data-testid="stMainBlockContainer"] {
+            padding: 1.2rem 1rem 3rem;
+        }
+        .hero-title { font-size: 2.1rem; }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------
+# Header
+# ---------------------------------------------------------
+st.markdown(
+    """
+    <div class="eyebrow">Customer intelligence · Predictive analytics</div>
+    <div class="hero-title">Find the next wellness<br>package opportunity.</div>
+    <div class="hero-copy">
+        Enter a customer's profile, travel preferences and sales interaction.
+        The model will estimate whether they are likely to purchase the package.
+    </div>
+    <div class="hero-chip">✦ &nbsp; Wellness tourism purchase predictor</div>
+    """,
+    unsafe_allow_html=True,
+)
+st.write("")
+
+# ---------------------------------------------------------
+# Model and Hugging Face helpers
+# ---------------------------------------------------------
+def get_hf_token():
+    token = os.environ.get("HF_TOKEN")
+    if token:
+        return token
+    try:
+        return st.secrets.get("HF_TOKEN")
+    except Exception:
+        return None
+
 
 @st.cache_resource
 def load_model():
-    try:
-        # Try loading locally first for development
-        model = joblib.load("models/model.joblib")
-        print("Loaded model locally.")
-        return model
-    except Exception as e:
-        print(f"Local load failed: {e}. Trying Hugging Face...")
-        # Load from Hugging Face
+    if MODEL_PATH.exists():
         try:
-            # Try getting token from secrets (Streamlit Cloud) or env var
-            token = os.environ.get("HF_TOKEN")
-            
-            if not token:
-                try:
-                    # Check if secrets are available (this raises error if no secrets.toml exists)
-                    if "HF_TOKEN" in st.secrets:
-                        token = st.secrets["HF_TOKEN"]
-                except FileNotFoundError:
-                    # Secrets file doesn't exist, which is fine for local dev if env var is set or repo is public
-                    pass
-                except Exception:
-                    pass
-                
-            model_path = hf_hub_download(repo_id=HF_MODEL_REPO, filename="model.joblib", token=token)
-            model = joblib.load(model_path)
-            return model
-        except Exception as e:
-            st.error(f"Error loading model: {e}")
-            st.info("If the model repo is Private, make sure to add 'HF_TOKEN' to your Space Secrets (or local .streamlit/secrets.toml).")
-            return None
+            return joblib.load(MODEL_PATH)
+        except Exception as exc:
+            st.error(f"I couldn't load the local model: {exc}")
+
+    try:
+        model_file = hf_hub_download(
+            repo_id=HF_MODEL_REPO,
+            filename="model.joblib",
+            token=get_hf_token(),
+        )
+        return joblib.load(model_file)
+    except Exception as exc:
+        st.error("The prediction model could not be loaded.")
+        st.caption(
+            "Check that the model exists in the configured Hugging Face repository "
+            "and that HF_TOKEN has access if the repository is private."
+        )
+        with st.expander("Technical details"):
+            st.code(str(exc))
+        return None
+
 
 def save_prediction(input_data, prediction, probability):
-    """
-    Saves the input data and prediction result to a CSV file on Hugging Face.
-    """
-    # 1. Get Token
-    token = os.environ.get("HF_TOKEN")
-    if not token and "HF_TOKEN" in st.secrets:
-        token = st.secrets["HF_TOKEN"]
-        
+    token = get_hf_token()
     if not token:
-        print("No token found. Skipping log save.")
-        return
+        return False
 
     try:
         api = HfApi(token=token)
-        
-        # 2. Add prediction metadata
         log_entry = input_data.copy()
-        log_entry['Prediction'] = prediction
-        log_entry['Probability'] = probability
-        log_entry['Timestamp'] = pd.Timestamp.now()
+        log_entry["Prediction"] = int(prediction)
+        log_entry["Probability"] = float(probability)
+        log_entry["Timestamp"] = pd.Timestamp.now(tz="UTC").isoformat()
 
-        # 3. Download existing log file (if exists)
-        updated_log = None
         try:
-            log_path = hf_hub_download(repo_id=HF_DATASET_REPO, filename=LOG_FILENAME, repo_type="dataset", token=token)
+            log_path = hf_hub_download(
+                repo_id=HF_DATASET_REPO,
+                filename=LOG_FILENAME,
+                repo_type="dataset",
+                token=token,
+            )
             existing_log = pd.read_csv(log_path)
             updated_log = pd.concat([existing_log, log_entry], ignore_index=True)
         except Exception:
-            # File likely doesn't exist yet
             updated_log = log_entry
 
-        # 4. Save and Upload
-        updated_log.to_csv(LOG_FILENAME, index=False)
-        
+        temp_path = Path(LOG_FILENAME)
+        updated_log.to_csv(temp_path, index=False)
         api.upload_file(
-            path_or_fileobj=LOG_FILENAME,
+            path_or_fileobj=str(temp_path),
             path_in_repo=LOG_FILENAME,
             repo_id=HF_DATASET_REPO,
-            repo_type="dataset"
+            repo_type="dataset",
         )
-        print("Prediction logged successfully.")
-        
-    except Exception as e:
-        print(f"Failed to log prediction: {e}")
+        return True
+    except Exception as exc:
+        print(f"Prediction logging failed: {exc}")
+        return False
+
 
 model = load_model()
 
-if model:
-    # Input form
+if model is not None:
+    st.markdown(
+        '<div class="section-kicker">01 / Customer information</div>'
+        '<div class="section-title">Who is the customer?</div>'
+        '<div class="section-copy">Basic profile and household details.</div>',
+        unsafe_allow_html=True,
+    )
+
     with st.form("prediction_form"):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            age = st.number_input("Age", min_value=18, max_value=100, value=30)
-            type_of_contact = st.selectbox("Type of Contact", ["Company Invited", "Self Inquiry"])
-            city_tier = st.selectbox("City Tier", [1, 2, 3])
-            occupation = st.selectbox("Occupation", ["Salaried", "Small Business", "Large Business", "Free Lancer"])
-            gender = st.selectbox("Gender", ["Male", "Female"])
-            number_of_person_visiting = st.number_input("Number of Person Visiting", min_value=1, value=2)
-            preferred_property_star = st.selectbox("Preferred Property Star", [3.0, 4.0, 5.0])
-            marital_status = st.selectbox("Marital Status", ["Married", "Divorced", "Single", "Unmarried"])
-            number_of_trips = st.number_input("Number of Trips", min_value=0, value=1)
-            
-        with col2:
-            passport = st.selectbox("Passport", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-            own_car = st.selectbox("Own Car", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-            number_of_children_visiting = st.number_input("Number of Children Visiting", min_value=0, value=0)
-            designation = st.selectbox("Designation", ["Manager", "Executive", "Senior Manager", "AVP", "VP"])
-            monthly_income = st.number_input("Monthly Income", min_value=0, value=20000)
-            pitch_satisfaction_score = st.slider("Pitch Satisfaction Score", 1, 5, 3)
-            product_pitched = st.selectbox("Product Pitched", ["Basic", "Standard", "Deluxe", "Super Deluxe", "King"])
-            number_of_followups = st.number_input("Number of Followups", min_value=0, value=3)
-            duration_of_pitch = st.number_input("Duration of Pitch (minutes)", min_value=0, value=10)
-        
-        submitted = st.form_submit_button("Predict")
-        
+        with st.container(border=True):
+            profile_left, profile_right = st.columns(2, gap="large")
+            with profile_left:
+                age = st.number_input("Age", min_value=18, max_value=100, value=30, step=1)
+                gender = st.selectbox("Gender", ["Male", "Female"])
+                marital_status = st.selectbox(
+                    "Marital status", ["Married", "Divorced", "Single", "Unmarried"]
+                )
+                occupation = st.selectbox(
+                    "Occupation",
+                    ["Salaried", "Small Business", "Large Business", "Free Lancer"],
+                )
+            with profile_right:
+                designation = st.selectbox(
+                    "Designation", ["Manager", "Executive", "Senior Manager", "AVP", "VP"]
+                )
+                monthly_income = st.number_input(
+                    "Monthly income", min_value=0, value=20000, step=1000
+                )
+                passport = st.selectbox(
+                    "Passport", [0, 1], format_func=lambda value: "Yes" if value else "No"
+                )
+                own_car = st.selectbox(
+                    "Own car", [0, 1], format_func=lambda value: "Yes" if value else "No"
+                )
+
+        st.write("")
+        st.markdown(
+            '<div class="section-kicker">02 / Travel preferences</div>'
+            '<div class="section-title">What does their trip look like?</div>'
+            '<div class="section-copy">Travel party, destination preference and past travel activity.</div>',
+            unsafe_allow_html=True,
+        )
+        with st.container(border=True):
+            travel_left, travel_right = st.columns(2, gap="large")
+            with travel_left:
+                type_of_contact = st.selectbox(
+                    "Type of contact", ["Company Invited", "Self Inquiry"]
+                )
+                city_tier = st.selectbox("City tier", [1, 2, 3])
+                number_of_person_visiting = st.number_input(
+                    "People visiting", min_value=1, value=2, step=1
+                )
+                number_of_children_visiting = st.number_input(
+                    "Children visiting", min_value=0, value=0, step=1
+                )
+            with travel_right:
+                preferred_property_star = st.selectbox(
+                    "Preferred property rating", [3.0, 4.0, 5.0], format_func=lambda x: f"{x:.0f} star"
+                )
+                number_of_trips = st.number_input(
+                    "Trips in the past year", min_value=0, value=1, step=1
+                )
+                product_pitched = st.selectbox(
+                    "Package pitched", ["Basic", "Standard", "Deluxe", "Super Deluxe", "King"]
+                )
+
+        st.write("")
+        st.markdown(
+            '<div class="section-kicker">03 / Sales interaction</div>'
+            '<div class="section-title">How did the pitch go?</div>'
+            '<div class="section-copy">A few details about the sales conversation.</div>',
+            unsafe_allow_html=True,
+        )
+        with st.container(border=True):
+            sales_left, sales_right = st.columns(2, gap="large")
+            with sales_left:
+                pitch_satisfaction_score = st.slider(
+                    "Pitch satisfaction score", min_value=1, max_value=5, value=3,
+                    help="Rate the customer's satisfaction with the sales pitch."
+                )
+                number_of_followups = st.number_input(
+                    "Number of follow-ups", min_value=0, value=3, step=1
+                )
+            with sales_right:
+                duration_of_pitch = st.number_input(
+                    "Pitch duration (minutes)", min_value=0, value=10, step=1
+                )
+                st.caption("Use the information recorded during the customer interaction.")
+
+        st.write("")
+        submitted = st.form_submit_button(
+            "Generate purchase prediction  →", use_container_width=True
+        )
+
     if submitted:
-        # Create dataframe from inputs
-        input_data = pd.DataFrame({
-            'Age': [age],
-            'TypeofContact': [type_of_contact],
-            'CityTier': [city_tier],
-            'Occupation': [occupation],
-            'Gender': [gender],
-            'NumberOfPersonVisiting': [number_of_person_visiting],
-            'PreferredPropertyStar': [preferred_property_star],
-            'MaritalStatus': [marital_status],
-            'NumberOfTrips': [number_of_trips],
-            'Passport': [passport],
-            'OwnCar': [own_car],
-            'NumberOfChildrenVisiting': [number_of_children_visiting],
-            'Designation': [designation],
-            'MonthlyIncome': [monthly_income],
-            'PitchSatisfactionScore': [pitch_satisfaction_score],
-            'ProductPitched': [product_pitched],
-            'NumberOfFollowups': [number_of_followups],
-            'DurationOfPitch': [duration_of_pitch]
-        })
-        
-        # Make prediction using the pipeline
-        try:
-            prediction = model.predict(input_data)[0]
-            probability = model.predict_proba(input_data)[0][1]
-            
-            if prediction == 1:
-                st.success(f"Prediction: Will Purchase (Probability: {probability:.2f})")
-            else:
-                st.warning(f"Prediction: Will Not Purchase (Probability: {probability:.2f})")
-                
-            # Log the prediction
-            save_prediction(input_data, prediction, probability)
-            
-        except Exception as e:
-            st.error(f"Prediction Error: {e}")
-            st.info("Ensure all columns used in training are provided in the input dataframe.")
+        if number_of_children_visiting > number_of_person_visiting:
+            st.error("Children visiting cannot be greater than the total number of people visiting.")
+        else:
+            input_data = pd.DataFrame(
+                {
+                    "Age": [age],
+                    "TypeofContact": [type_of_contact],
+                    "CityTier": [city_tier],
+                    "Occupation": [occupation],
+                    "Gender": [gender],
+                    "NumberOfPersonVisiting": [number_of_person_visiting],
+                    "PreferredPropertyStar": [preferred_property_star],
+                    "MaritalStatus": [marital_status],
+                    "NumberOfTrips": [number_of_trips],
+                    "Passport": [passport],
+                    "OwnCar": [own_car],
+                    "NumberOfChildrenVisiting": [number_of_children_visiting],
+                    "Designation": [designation],
+                    "MonthlyIncome": [monthly_income],
+                    "PitchSatisfactionScore": [pitch_satisfaction_score],
+                    "ProductPitched": [product_pitched],
+                    "NumberOfFollowups": [number_of_followups],
+                    "DurationOfPitch": [duration_of_pitch],
+                }
+            )
+
+            try:
+                prediction = int(model.predict(input_data)[0])
+                probabilities = model.predict_proba(input_data)[0]
+                class_labels = list(model.classes_)
+                positive_index = class_labels.index(1) if 1 in class_labels else 1
+                probability = float(probabilities[positive_index])
+
+                st.write("")
+                st.markdown(
+                    '<div class="section-kicker">Prediction result</div>'
+                    '<div class="section-title">Model assessment</div>',
+                    unsafe_allow_html=True,
+                )
+
+                if prediction == 1:
+                    result_title = "Likely to purchase"
+                    result_description = "The model predicts that this customer is likely to purchase the wellness package."
+                    result_color = "#087f8c"
+                else:
+                    result_title = "Unlikely to purchase"
+                    result_description = "The model predicts that this customer is less likely to purchase the wellness package."
+                    result_color = "#b66b36"
+
+                st.markdown(
+                    f"""
+                    <div class="result-panel">
+                        <div class="result-label">Predicted outcome</div>
+                        <div class="result-value" style="color:{result_color}">{result_title}</div>
+                        <div class="result-note">{result_description}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                metric_left, metric_right = st.columns([1, 2])
+                with metric_left:
+                    st.metric("Purchase probability", f"{probability:.1%}")
+                with metric_right:
+                    st.progress(probability, text="Estimated probability of purchase")
+
+                if save_prediction(input_data, prediction, probability):
+                    st.caption("Prediction saved to the configured Hugging Face dataset.")
+                else:
+                    st.caption("Prediction generated. Logging was skipped because storage access is not configured.")
+
+            except Exception as exc:
+                st.error(f"The model could not generate a prediction: {exc}")
+                st.caption("Check that the input fields match the features used when the model was trained.")
+
+st.markdown(
+    """
+    <div class="footnote">
+        This tool is a machine learning demonstration. Its output is an estimate based on
+        the training data and should support, not replace, human judgement.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
