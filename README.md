@@ -42,6 +42,8 @@ I also wanted to take the project beyond a model running in a notebook. The repo
 │   ├── banner.png
 │   ├── Dockerfile
 │   └── requirements.txt
+├── docs/
+│   └── MODEL_CARD.md
 ├── src/
 │   ├── data_prep.py
 │   ├── train.py
@@ -53,6 +55,8 @@ I also wanted to take the project beyond a model running in a notebook. The repo
 ```
 
 Generated datasets, trained model files and experiment logs are created at runtime and are not committed to this repository.
+
+I have also documented the model's intended use, training approach, inputs and limitations in [the model card](docs/MODEL_CARD.md).
 
 ## How the model is trained
 
