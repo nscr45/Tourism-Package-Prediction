@@ -61,8 +61,18 @@ def process_and_update_data():
         print("Data cleaning completed.")
 
     # 3. Train-Test Split
+    if "ProdTaken" not in df.columns:
+        raise ValueError("The source dataset must contain the ProdTaken target column.")
     print("Splitting data...")
-    train, test = train_test_split(df, test_size=0.2, random_state=42)
+    target_counts = df["ProdTaken"].value_counts(dropna=False)
+    stratify_target = (
+        df["ProdTaken"]
+        if df["ProdTaken"].nunique() > 1 and target_counts.min() >= 2
+        else None
+    )
+    train, test = train_test_split(
+        df, test_size=0.2, random_state=42, stratify=stratify_target
+    )
     
     # Save locally temporarily
     os.makedirs("data/processed", exist_ok=True)
