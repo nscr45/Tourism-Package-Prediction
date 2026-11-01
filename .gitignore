@@ -1,18 +1,39 @@
-# Data
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Generated data and logs
 data/
 *.csv
+prediction_logs.csv
+*.log
 
-# Models
+# Trained models and experiment outputs
 models/
 *.joblib
+*.pkl
+*.pickle
 
-# Environment
-.env
-.venv
-venv/
-__pycache__/
-*.pyc
+# Notebooks
+.ipynb_checkpoints/
 
-# IDE
+# Editors and operating systems
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
