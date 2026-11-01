@@ -36,10 +36,11 @@ I also wanted to take the project beyond a model running in a notebook. The repo
 .
 ├── .github/
 │   └── workflows/
+│       ├── ci.yml
 │       └── pipeline.yml
 ├── app/
 │   ├── app.py
-│   ├── banner.png
+│   ├── tourism_hero.svg
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── docs/
@@ -95,15 +96,15 @@ The scripts currently refer to these repositories:
 - Model: `Sricharan451706/Tourism-Package-Predictor`
 - Streamlit Space: `Sricharan451706/Tourism-Package-Predictor-Space`
 
-The training and deployment scripts need a Hugging Face access token with the permissions required for the repositories being updated. For GitHub Actions, add it as a repository secret named `HF_TOKEN`. Do not commit access tokens or local secrets files.
+The training and deployment scripts need a Hugging Face access token with the permissions required for the repositories being updated. For GitHub Actions, add it as a repository secret named `HF_TOKEN`. Do not commit access tokens or local secrets files. The deployment script uploads only the app, its requirements, the scenic SVG background and the trained model when present. It does not delete or replace unrelated files already in the Space.
 
 The app can also log predictions to the configured Hugging Face dataset repository. This requires write access. Prediction logging is skipped when a token is not available.
 
 ## Current implementation notes
 
-The repository contains a GitHub Actions workflow intended to connect data preparation, model training and deployment. The workflow and scripts still need their data paths and artifact hand-offs aligned before the full process can be treated as a verified, one-click pipeline. Running the individual scripts also depends on the expected files and Hugging Face repositories being available.
+The repository includes two GitHub Actions workflows. `ci.yml` runs Python syntax checks on pushes and pull requests. `pipeline.yml` is a manually triggered MLOps workflow: it downloads the configured source CSV from the Hugging Face dataset, prepares and publishes train/test splits, trains and uploads the model, then updates the Hugging Face Space. Add `HF_TOKEN` to the GitHub repository secrets before running it. The source dataset file must exist as `cleaned_tourism.csv` in the configured dataset repository.
 
-The Streamlit app and model-loading code are implemented, but deployment should be checked against the current Hugging Face Space configuration before treating it as live.
+The Streamlit interface uses an animated, dark glass-style design with a coastal SVG background stored in `app/tourism_hero.svg`. The app embeds this asset at runtime, so the deployed Space does not depend on a separate image-hosting service. Run the deployment script from the repository root with `HF_TOKEN` set, or trigger the manual GitHub Actions workflow.
 
 ## Next improvements
 
