@@ -27,38 +27,12 @@ def process_and_update_data():
         print(f"Please ensure '{RAW_DATA_FILENAME}' exists in {HF_DATASET_REPO}.")
         raise RuntimeError("Unable to download the source dataset.") from e
 
-    # 2. Data Cleaning
-    print("Cleaning data...")
-    # Drop CustomerID as it's not predictive
-    if 'CustomerID' in df.columns:
-        df = df.drop(columns=['CustomerID'])
-    
-    # Handle missing values
-    if df.isna().any().any():
-    # Numeric columns: fill with median (only if needed)
-        num_cols = df.select_dtypes(include=['float64', 'int64']).columns
-        for col in num_cols:
-            if df[col].isna().any():
-                median_val = df[col].median()
-                df[col] = df[col].fillna(median_val)
-                print(f"  {col}: Filled {df[col].isna().sum()} NaNs with median {median_val}")
-        
-        # Categorical columns: fill with mode (only if needed)
-        cat_cols = df.select_dtypes(include=['object']).columns
-        for col in cat_cols:
-            if df[col].isna().any():
-                mode_val = df[col].mode()
-                if len(mode_val) > 0:
-                    df[col] = df[col].fillna(mode_val[0])
-                    print(f"  {col}: Filled {df[col].isna().sum()} NaNs with mode '{mode_val[0]}'")
-                else:
-                    df[col] = df[col].fillna('Unknown')
-                    print(f"  {col}: Filled with 'Unknown' (no mode found)")
-        
-        print("Data cleaning completed.")
-
-    else:
-        print("Data cleaning completed.")
+    # 2. Data preparation
+    # Keep missing values intact here. The fitted sklearn pipeline imputes them
+    # using training-fold statistics, avoiding leakage from the test split.
+    if "ProdTaken" not in df.columns:
+        raise ValueError("The source dataset must contain the ProdTaken target column.")
+    df = df.dropna(subset=["ProdTaken"]).copy()
 
     # 3. Train-Test Split
     if "ProdTaken" not in df.columns:
