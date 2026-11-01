@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-label="A tranquil coastal wellness destination at sunrise">
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#102f43"/><stop offset=".48" stop-color="#3b8290"/><stop offset="1" stop-color="#f2b98a"/></linearGradient>
+ <linearGradient id="sea" x2="0" y2="1"><stop stop-color="#267b83"/><stop offset="1" stop-color="#082d3d"/></linearGradient>
+ <linearGradient id="sand" x2="0" y2="1"><stop stop-color="#d5b18a"/><stop offset="1" stop-color="#6d7767"/></linearGradient>
+ <radialGradient id="sun"><stop stop-color="#fff2c9"/><stop offset="1" stop-color="#ffd49a" stop-opacity="0"/></radialGradient>
+ <filter id="blur"><feGaussianBlur stdDeviation="32"/></filter>
+</defs>
+<rect width="1920" height="1080" fill="url(#sky)"/>
+<circle cx="1420" cy="300" r="240" fill="url(#sun)"/><circle cx="1420" cy="300" r="92" fill="#ffe3b3" opacity=".88"/>
+<path d="M0 520 Q220 390 430 500 T860 460 T1320 470 T1920 410 V760 H0Z" fill="#315f68" opacity=".68"/>
+<path d="M0 610 Q250 470 520 585 Q760 680 1030 555 Q1300 430 1540 550 Q1740 640 1920 510 V820 H0Z" fill="#1c4b55"/>
+<path d="M0 650 Q300 600 570 650 Q850 700 1120 620 Q1450 520 1920 640 V1080 H0Z" fill="url(#sea)"/>
+<path d="M0 760 Q320 700 620 760 T1240 735 T1920 760" fill="none" stroke="#a9d5c8" stroke-width="7" opacity=".32"/>
+<path d="M0 850 Q350 790 700 850 T1400 830 T1920 870" fill="none" stroke="#c4dfd0" stroke-width="4" opacity=".24"/>
+<path d="M0 920 Q280 830 560 890 Q830 960 1110 875 Q1430 790 1660 870 Q1810 930 1920 900 V1080 H0Z" fill="url(#sand)"/>
+<path d="M0 1010 Q260 930 520 1000 Q800 1060 1060 990 Q1370 910 1640 990 Q1800 1035 1920 1000 V1080 H0Z" fill="#263e3b" opacity=".7"/>
+<g fill="#0d3437" opacity=".82"><path d="M120 920 Q155 770 185 650 Q205 780 220 920Z"/><path d="M170 760 Q90 720 60 650 Q140 680 185 740Z"/><path d="M185 730 Q245 650 310 640 Q270 710 190 760Z"/><path d="M360 940 Q390 820 420 720 Q440 830 455 940Z"/><path d="M405 820 Q335 780 300 720 Q375 750 415 800Z"/><path d="M425 790 Q485 720 550 710 Q500 780 430 825Z"/></g>
+<g fill="none" stroke="#d7e9d7" stroke-width="3" opacity=".28"><path d="M80 540 Q330 500 580 550"/><path d="M1120 510 Q1390 460 1680 515"/><path d="M250 690 Q500 655 760 700"/></g>
+<rect width="1920" height="1080" fill="#031a24" opacity=".20"/>
+</svg>
