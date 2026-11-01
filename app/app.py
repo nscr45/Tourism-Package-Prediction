@@ -32,14 +32,14 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 
     :root {
-        --ink: #172b35;
-        --muted: #687b83;
-        --teal: #087f8c;
-        --teal-dark: #08636d;
-        --mint: #e8f5f2;
-        --line: #e3eceb;
-        --paper: #f5f8f7;
-        --white: #ffffff;
+        --ink: #f1fbfc;
+        --muted: #b4cbd0;
+        --teal: #39d4c0;
+        --teal-dark: #13a99e;
+        --mint: #123b45;
+        --line: rgba(139, 226, 220, .25);
+        --paper: #061c25;
+        --white: rgba(7, 37, 47, .76);
     }
 
     .stApp {
@@ -163,25 +163,44 @@ st.markdown(
     }
 
     [data-testid="stVerticalBlockBorderWrapper"] {
-        background: var(--white);
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        box-shadow: 0 8px 28px rgba(28, 61, 68, .045);
+        background: linear-gradient(135deg, rgba(10, 55, 66, .82), rgba(5, 31, 42, .76));
+        border: 1px solid rgba(111, 225, 217, .36);
+        border-radius: 20px;
+        box-shadow: 0 14px 38px rgba(0, 12, 20, .22), inset 0 1px 0 rgba(255,255,255,.06);
+        backdrop-filter: blur(18px);
     }
 
     [data-testid="stWidgetLabel"] p {
-        color: #304650;
+        color: #e5f4f5;
         font-weight: 600;
         font-size: .88rem;
     }
 
     [data-baseweb="select"] > div,
     [data-testid="stNumberInput"] input {
-        background: #f8fbfa;
-        border-color: #dce8e6;
+        background: rgba(3, 25, 35, .72);
+        border-color: rgba(174, 224, 226, .45);
+        color: #f4fbfc;
         border-radius: 10px;
         min-height: 2.8rem;
     }
+    [data-baseweb="select"] *, [data-testid="stNumberInput"] input {
+        color: #f4fbfc !important;
+    }
+    [data-testid="stCaptionContainer"], [data-testid="stMarkdownContainer"] p {
+        color: #c0d5d9;
+    }
+    .section-kicker { color: #55dfd0; }
+    .section-title { color: #f4fbfc; }
+    .section-copy { color: #b4cbd0; }
+    .result-panel {
+        background: rgba(5, 35, 46, .88);
+        border-color: rgba(115, 223, 216, .32);
+        color: #f4fbfc;
+        backdrop-filter: blur(16px);
+    }
+    .result-label, .result-note { color: #bfd5d9; }
+    .footnote { color: #b5cbd0; }
 
     [data-testid="stSlider"] [data-baseweb="slider"] {
         padding-top: .35rem;
