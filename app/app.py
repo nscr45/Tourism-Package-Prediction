@@ -55,7 +55,7 @@ st.markdown(
         z-index: -2;
         background-image:
             linear-gradient(180deg, rgba(3,22,31,.70), rgba(3,30,38,.80)),
-            url("data:image/jpeg;base64,__TOURISM_BG__");
+            url("data:image/svg+xml;base64,__TOURISM_BG__");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
@@ -128,9 +128,9 @@ st.markdown(
         display: inline-flex;
         align-items: center;
         gap: .45rem;
-        border: 1px solid #cce5e1;
-        background: rgba(255,255,255,.75);
-        color: var(--teal-dark);
+        border: 1px solid rgba(190,255,239,.34);
+        background: rgba(255,255,255,.12);
+        color: #eafffa;
         padding: .42rem .78rem;
         border-radius: 999px;
         font-size: .78rem;
@@ -209,7 +209,7 @@ st.markdown(
     div.stButton > button,
     div[data-testid="stFormSubmitButton"] > button {
         background: var(--teal);
-        color: white;
+        color: #052b33;
         border: 0;
         border-radius: 11px;
         min-height: 3.1rem;
@@ -222,7 +222,7 @@ st.markdown(
     div.stButton > button:hover,
     div[data-testid="stFormSubmitButton"] > button:hover {
         background: var(--teal-dark);
-        color: white;
+        color: #f4fbfc;
         border: 0;
         transform: translateY(-1px);
     }
@@ -231,7 +231,8 @@ st.markdown(
         border-radius: 18px;
         padding: 1.35rem 1.5rem;
         border: 1px solid var(--line);
-        background: white;
+        background: rgba(5, 35, 46, .88);
+        color: #f4fbfc;
         margin-top: 1rem;
     }
 
@@ -240,7 +241,7 @@ st.markdown(
         letter-spacing: .12em;
         font-size: .72rem;
         font-weight: 800;
-        color: var(--muted);
+        color: #bfd5d9;
     }
 
     .result-value {
@@ -257,7 +258,7 @@ st.markdown(
     }
 
     .footnote {
-        color: #788990;
+        color: #b5cbd0;
         font-size: .78rem;
         line-height: 1.6;
         margin-top: 1.4rem;
@@ -275,7 +276,7 @@ st.markdown(
 )
 
 # Use the banner already included in this app folder as the hero background.
-BANNER_PATH = Path(__file__).with_name("tourism_hero.jpg")
+BANNER_PATH = Path(__file__).with_name("tourism_hero.svg")
 try:
     banner_base64 = base64.b64encode(BANNER_PATH.read_bytes()).decode("utf-8")
 except OSError:
@@ -286,7 +287,7 @@ st.markdown(
     """<style>
     .stApp:before { background-image:
         linear-gradient(180deg, rgba(3,22,31,.70), rgba(3,30,38,.80)),
-        url("data:image/jpeg;base64,__TOURISM_BG__"); }
+        url("data:image/svg+xml;base64,__TOURISM_BG__"); }
     </style>""".replace("__TOURISM_BG__", banner_base64),
     unsafe_allow_html=True,
 )
@@ -298,7 +299,7 @@ st.markdown(
         position: relative; overflow: hidden; isolation: isolate;
         min-height: 340px; display: flex; align-items: center;
         padding: clamp(2rem, 5vw, 4.2rem); border-radius: 26px;
-        background-image: linear-gradient(90deg, rgba(5,26,34,.94) 0%, rgba(5,36,42,.78) 48%, rgba(5,36,42,.18) 100%), url("data:image/png;base64,__BANNER_BASE64__");
+        background-image: linear-gradient(90deg, rgba(5,26,34,.94) 0%, rgba(5,36,42,.78) 48%, rgba(5,36,42,.18) 100%), url("data:image/svg+xml;base64,__BANNER_BASE64__");
         background-size: cover; background-position: center 48%;
         box-shadow: 0 22px 55px rgba(8,49,57,.19);
         animation: heroReveal .85s ease both;
