@@ -43,11 +43,44 @@ st.markdown(
     }
 
     .stApp {
-        background:
-            radial-gradient(circle at 90% 0%, rgba(8,127,140,.09), transparent 28rem),
-            var(--paper);
-        color: var(--ink);
+        background: #061c25;
+        color: #f4fbfc;
         font-family: 'DM Sans', sans-serif;
+        isolation: isolate;
+    }
+    .stApp:before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background-image:
+            linear-gradient(180deg, rgba(3,22,31,.70), rgba(3,30,38,.80)),
+            url("data:image/jpeg;base64,__TOURISM_BG__");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        transform: scale(1.04);
+        animation: scenicDrift 34s ease-in-out infinite alternate;
+        will-change: transform;
+    }
+    .stApp:after {
+        content: "";
+        position: fixed;
+        inset: -20%;
+        z-index: -1;
+        pointer-events: none;
+        background:
+            radial-gradient(ellipse at 18% 18%, rgba(39,213,192,.18), transparent 34%),
+            radial-gradient(ellipse at 82% 72%, rgba(31,155,203,.15), transparent 38%);
+        animation: ambientFloat 18s ease-in-out infinite alternate;
+    }
+    @keyframes scenicDrift {
+        from { transform: scale(1.04) translate3d(-.5%, 0, 0); }
+        to { transform: scale(1.13) translate3d(.8%, -1%, 0); }
+    }
+    @keyframes ambientFloat {
+        from { opacity: .55; transform: translate3d(-1%, 0, 0) rotate(0deg); }
+        to { opacity: 1; transform: translate3d(1%, -1%, 0) rotate(2deg); }
     }
 
     [data-testid="stHeader"] { background: transparent; }
@@ -223,11 +256,21 @@ st.markdown(
 )
 
 # Use the banner already included in this app folder as the hero background.
-BANNER_PATH = Path(__file__).with_name("banner.png")
+BANNER_PATH = Path(__file__).with_name("tourism_hero.jpg")
 try:
     banner_base64 = base64.b64encode(BANNER_PATH.read_bytes()).decode("utf-8")
 except OSError:
     banner_base64 = ""
+
+# Inject the same seasonal travel artwork into the animated page background.
+st.markdown(
+    """<style>
+    .stApp:before { background-image:
+        linear-gradient(180deg, rgba(3,22,31,.70), rgba(3,30,38,.80)),
+        url("data:image/jpeg;base64,__TOURISM_BG__"); }
+    </style>""".replace("__TOURISM_BG__", banner_base64),
+    unsafe_allow_html=True,
+)
 
 st.markdown(
     """<style>
