@@ -27,7 +27,7 @@ The complete preprocessing and prediction pipeline is saved together so the same
 
 ## Input features
 
-The Streamlit app collects customer and interaction details including age, contact type, city tier, occupation, gender, party size, preferred property rating, marital status, travel history, passport and car ownership, designation, monthly income, pitch satisfaction, product pitched, follow-up count and pitch duration.
+The Streamlit app collects customer and interaction details including age, contact type, city tier, occupation, gender, party size, preferred property rating, marital status, travel history, passport and car ownership, designation, monthly income, pitch satisfaction, product pitched, follow-up count and pitch duration. The app uses an animated coastal SVG background stored in `app/tourism_hero.svg`; this visual asset does not affect model predictions.
 
 The exact feature columns expected by the model are determined by the training dataset used for that run.
 
@@ -39,7 +39,7 @@ No fixed performance metrics are included in this card because a verified output
 
 ## Data
 
-The training script expects train and test CSV files in the configured Hugging Face dataset repository and uses `ProdTaken` as the target column. Dataset provenance, collection details, licensing and redistribution terms should be documented here once confirmed.
+The training script first uses `data/processed/train.csv` and `data/processed/test.csv` when those files are present. Otherwise, it downloads the same filenames from the configured Hugging Face dataset repository. The data preparation script reads `cleaned_tourism.csv` from that repository and publishes the train/test splits. `ProdTaken` is the target column. Dataset provenance, collection details, licensing and redistribution terms should be documented here once confirmed.
 
 ## Limitations
 
@@ -51,4 +51,4 @@ The training script expects train and test CSV files in the configured Hugging F
 
 ## Maintenance
 
-Retrain and evaluate the model when the underlying data changes. Keep the training data, preprocessing, model artifact and evaluation results versioned so that predictions can be traced to the model that generated them.
+Retrain and evaluate the model when the underlying data changes. The manually triggered GitHub Actions workflow prepares the data, trains and uploads the model, then updates the Hugging Face Space. Keep the training data, preprocessing, model artifact and evaluation results versioned so that predictions can be traced to the model that generated them.
