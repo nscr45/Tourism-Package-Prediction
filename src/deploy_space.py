@@ -16,6 +16,7 @@ def deploy():
         "../app/app.py": "app.py",
         "../app/requirements.txt": "requirements.txt",
         "../app/Dockerfile": "Dockerfile",
+        "../app/tourism_hero.jpg": "tourism_hero.jpg",
         "../models/model.joblib": "model.joblib" 
     }
     
