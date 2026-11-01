@@ -19,18 +19,36 @@ HF_DATASET_REPO = f"{HF_USERNAME}/Tourism"
 HF_MODEL_REPO = f"{HF_USERNAME}/Tourism-Package-Predictor"
 
 def train_model():
-    print("Loading data from Hugging Face...")
+    print("Loading training and test data...")
+    local_train = "data/processed/train.csv"
+    local_test = "data/processed/test.csv"
     try:
-        # Download latest train/test files from Hugging Face
-        train_path = hf_hub_download(repo_id=HF_DATASET_REPO, filename="train.csv", repo_type="dataset")
-        test_path = hf_hub_download(repo_id=HF_DATASET_REPO, filename="test.csv", repo_type="dataset")
-        
-        train_df = pd.read_csv(train_path)
-        test_df = pd.read_csv(test_path)
-        print("Data loaded successfully from Hugging Face.")
+        if os.path.isfile(local_train) and os.path.isfile(local_test):
+            train_df = pd.read_csv(local_train)
+            test_df = pd.read_csv(local_test)
+            print("Using the processed data artifacts from data/processed/.")
+        else:
+            token = get_token()
+            train_path = hf_hub_download(
+                repo_id=HF_DATASET_REPO, filename="train.csv",
+                repo_type="dataset", token=token
+            )
+            test_path = hf_hub_download(
+                repo_id=HF_DATASET_REPO, filename="test.csv",
+                repo_type="dataset", token=token
+            )
+            train_df = pd.read_csv(train_path)
+            test_df = pd.read_csv(test_path)
+            print("Loaded train/test data from Hugging Face.")
     except Exception as e:
-        print(f"Error loading data from Hugging Face: {e}")
-        return
+        raise RuntimeError(
+            "Could not load data. Run src/data_prep.py first or check the Hugging Face dataset files."
+        ) from e
+
+    if "ProdTaken" not in train_df.columns or "ProdTaken" not in test_df.columns:
+        raise ValueError("Both train.csv and test.csv must contain the ProdTaken target column.")
+    if train_df["ProdTaken"].nunique() < 2:
+        raise ValueError("Training data must contain both target classes (0 and 1).")
 
     X_train = train_df.drop('ProdTaken', axis=1)
     y_train = train_df['ProdTaken']
@@ -60,7 +78,7 @@ def train_model():
     # Calculate scale_pos_weight for imbalance handling
     neg_count = (y_train == 0).sum()
     pos_count = (y_train == 1).sum()
-    scale_pos_weight = neg_count / pos_count
+    scale_pos_weight = neg_count / max(pos_count, 1)
     print(f"Class Imbalance Detected. Using scale_pos_weight: {scale_pos_weight:.2f}")
 
     # Model parameters
@@ -176,7 +194,7 @@ def get_token():
 
 def upload_model_to_hf():
     print("Uploading model to Hugging Face...")
-    api = HfApi()
+    api = HfApi(token=token)
     token = get_token()
     
     if token:
