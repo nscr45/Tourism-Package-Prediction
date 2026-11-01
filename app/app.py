@@ -1,3 +1,4 @@
+import base64
 import os
 from pathlib import Path
 
@@ -221,18 +222,108 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# Use the banner already included in this app folder as the hero background.
+BANNER_PATH = Path(__file__).with_name("banner.png")
+try:
+    banner_base64 = base64.b64encode(BANNER_PATH.read_bytes()).decode("utf-8")
+except OSError:
+    banner_base64 = ""
+
+st.markdown(
+    """<style>
+
+    .hero-banner {
+        position: relative; overflow: hidden; isolation: isolate;
+        min-height: 340px; display: flex; align-items: center;
+        padding: clamp(2rem, 5vw, 4.2rem); border-radius: 26px;
+        background-image: linear-gradient(90deg, rgba(5,26,34,.94) 0%, rgba(5,36,42,.78) 48%, rgba(5,36,42,.18) 100%), url("data:image/png;base64,__BANNER_BASE64__");
+        background-size: cover; background-position: center 48%;
+        box-shadow: 0 22px 55px rgba(8,49,57,.19);
+        animation: heroReveal .85s ease both;
+    }
+    .hero-banner:before, .hero-banner:after {
+        content: ""; position: absolute; z-index: -1; border-radius: 50%; pointer-events: none;
+    }
+    .hero-banner:before {
+        width: 290px; height: 290px; right: 8%; top: -120px;
+        border: 1px solid rgba(255,255,255,.24);
+        box-shadow: 0 0 0 35px rgba(255,255,255,.035), 0 0 0 75px rgba(255,255,255,.025);
+        animation: slowFloat 9s ease-in-out infinite;
+    }
+    .hero-banner:after {
+        width: 170px; height: 170px; right: 27%; bottom: -115px;
+        background: rgba(108,220,194,.16); filter: blur(8px);
+        animation: slowFloat 7s ease-in-out infinite reverse;
+    }
+    .hero-content { max-width: 680px; position: relative; z-index: 1; }
+    .hero-banner .eyebrow { color: #8de0d1; }
+    .hero-banner .hero-title { color: #fff !important; max-width: 650px; }
+    .hero-banner .hero-copy { color: rgba(255,255,255,.83); max-width: 590px; }
+    .hero-banner .hero-chip {
+        color: #eafffa; border-color: rgba(190,255,239,.34);
+        background: rgba(255,255,255,.12); backdrop-filter: blur(12px);
+    }
+    .hero-glow {
+        display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+        background: #8de0d1; box-shadow: 0 0 0 6px rgba(141,224,209,.15), 0 0 18px #8de0d1;
+        margin-right: .35rem;
+    }
+    .section-kicker, .section-title, .section-copy { animation: fadeUp .55s ease both; }
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+    }
+    [data-testid="stVerticalBlockBorderWrapper"]:hover {
+        transform: translateY(-2px); border-color: #c5dfda;
+        box-shadow: 0 14px 34px rgba(28,61,68,.075);
+    }
+    div[data-testid="stFormSubmitButton"] > button {
+        background: linear-gradient(110deg, #087f8c, #0b9c91, #087f8c);
+        background-size: 200% 100%; animation: buttonShimmer 5s ease infinite;
+    }
+    .result-panel { animation: fadeUp .55s ease both; }
+    @keyframes heroReveal {
+        from { opacity: 0; transform: translateY(14px) scale(.99); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slowFloat {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(18px) rotate(7deg); }
+    }
+    @keyframes buttonShimmer {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        *, *:before, *:after {
+            animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+            scroll-behavior: auto !important; transition-duration: .01ms !important;
+        }
+    }
+
+</style>""".replace("__BANNER_BASE64__", banner_base64),
+    unsafe_allow_html=True,
+)
+
 # ---------------------------------------------------------
 # Header
 # ---------------------------------------------------------
 st.markdown(
     """
-    <div class="eyebrow">Customer intelligence · Predictive analytics</div>
-    <div class="hero-title">Find the next wellness<br>package opportunity.</div>
-    <div class="hero-copy">
-        Enter a customer's profile, travel preferences and sales interaction.
-        The model will estimate whether they are likely to purchase the package.
-    </div>
-    <div class="hero-chip">✦ &nbsp; Wellness tourism purchase predictor</div>
+    <section class="hero-banner">
+      <div class="hero-content">
+        <div class="eyebrow"><span class="hero-glow"></span> Customer intelligence · Predictive analytics</div>
+        <div class="hero-title">Wellness journeys.<br>Smarter predictions.</div>
+        <div class="hero-copy">
+          Understand the customer behind every enquiry. Explore travel preferences,
+          customer details and sales interactions to estimate purchase intent.
+        </div>
+        <div class="hero-chip">✦ &nbsp; Wellness tourism purchase predictor</div>
+      </div>
+    </section>
     """,
     unsafe_allow_html=True,
 )
