@@ -1,131 +1,86 @@
-name: MLOps Pipeline
+name: Train and deploy tourism predictor
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  data-prep:
+  prepare-data:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Check out repository
         uses: actions/checkout@v4
-        
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
-          
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
       - name: Install dependencies
         run: pip install -r requirements.txt
-        
-      - name: Run data preprocessing script
+      - name: Prepare and publish dataset splits
         run: python src/data_prep.py
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          
-      # Upload processed data so the next job can use it
-      - name: Upload processed data
+      - name: Keep processed data for the training job
         uses: actions/upload-artifact@v4
         with:
           name: processed-data
-          path: .github/workflows/tourism_project/data/
+          path: data/processed/
+          if-no-files-found: error
+          retention-days: 1
 
-  train-and-eval:
-    needs: data-prep
+  train:
+    needs: prepare-data
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Check out repository
         uses: actions/checkout@v4
-        
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
-      
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
       - name: Install dependencies
         run: pip install -r requirements.txt
-        
-      # Download data from previous job
       - name: Download processed data
         uses: actions/download-artifact@v4
         with:
           name: processed-data
-          path: .github/workflows/tourism_project/data/
-        
-      - name: Run training and evaluation script
+          path: data/processed/
+      - name: Train and upload model
         run: python src/train.py
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          
-      # Upload model so deploy job can use it
-      - name: Upload model
+      - name: Keep model artifacts for deployment
         uses: actions/upload-artifact@v4
         with:
           name: trained-model
           path: models/
+          if-no-files-found: error
+          retention-days: 1
 
   deploy:
-    needs: train-and-eval
+    needs: train
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Check out repository
         uses: actions/checkout@v4
-        
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
-          
-      - name: Install dependencies
-        run: pip install huggingface_hub
-        
-      # Download model from previous job
+          python-version: "3.11"
+      - name: Install deployment dependency
+        run: pip install "huggingface_hub>=0.23,<2"
       - name: Download trained model
         uses: actions/download-artifact@v4
         with:
           name: trained-model
           path: models/
-      
-      - name: Deploy to Hugging Face Space
-        run: |
-          cd src
-          python deploy_space.py
+      - name: Update the Hugging Face Space
+        run: python src/deploy_space.py
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          
-  auto-push-generated-changes:
-    needs: deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      # Download artifacts to commit them to repo (optional, but requested)
-      - name: Download processed data
-        uses: actions/download-artifact@v4
-        with:
-          name: processed-data
-          path: .github/workflows/tourism_project/data/
-          
-      - name: Download trained model
-        uses: actions/download-artifact@v4
-        with:
-          name: trained-model
-          path: models/
-      
-      - name: Commit and push generated files if any
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "CI: Auto update generated files"
-          git push origin main
-
-
