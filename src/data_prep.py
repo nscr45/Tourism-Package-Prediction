@@ -15,13 +15,17 @@ def process_and_update_data():
     # 1. Download Raw Data from Hugging Face
     try:
         print(f"Downloading {RAW_DATA_FILENAME} from {HF_DATASET_REPO}...")
-        raw_data_path = hf_hub_download(repo_id=HF_DATASET_REPO, filename=RAW_DATA_FILENAME, repo_type="dataset")
+        token = os.environ.get("HF_TOKEN")
+        raw_data_path = hf_hub_download(
+            repo_id=HF_DATASET_REPO, filename=RAW_DATA_FILENAME,
+            repo_type="dataset", token=token
+        )
         df = pd.read_csv(raw_data_path)
         print("Raw data downloaded successfully.")
     except Exception as e:
         print(f"Error downloading raw data: {e}")
-        print("Please ensure 'Tourism.csv' exists in your Hugging Face Dataset repository.")
-        return
+        print(f"Please ensure '{RAW_DATA_FILENAME}' exists in {HF_DATASET_REPO}.")
+        raise RuntimeError("Unable to download the source dataset.") from e
 
     # 2. Data Cleaning
     print("Cleaning data...")
@@ -74,8 +78,10 @@ def process_and_update_data():
 
     # 4. Upload Updated Splits to Hugging Face
     print("Uploading new splits and cleaned data to Hugging Face...")
-    api = HfApi()
-    token = HfFolder.get_token()
+    token = os.environ.get("HF_TOKEN") or HfFolder.get_token()
+    if not token:
+        raise RuntimeError("HF_TOKEN is required to publish the processed dataset splits.")
+    api = HfApi(token=token)
     
     if token:
         try:
@@ -104,7 +110,7 @@ def process_and_update_data():
         except Exception as e:
             print(f"Failed to upload to Hugging Face: {e}")
     else:
-        print("Hugging Face token not found. Please login.")
+        raise RuntimeError("Hugging Face token not found. Set HF_TOKEN or run huggingface-cli login.")
 
 if __name__ == "__main__":
     process_and_update_data()
