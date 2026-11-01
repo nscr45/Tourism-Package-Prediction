@@ -11,6 +11,7 @@ from sklearn.model_selection import GridSearchCV
 import joblib
 import os
 import json
+import sklearn
 from huggingface_hub import HfApi, HfFolder, hf_hub_download
 
 # Configuration
@@ -19,6 +20,9 @@ HF_DATASET_REPO = f"{HF_USERNAME}/Tourism"
 HF_MODEL_REPO = f"{HF_USERNAME}/Tourism-Package-Predictor"
 
 def train_model():
+    print(f"Training with scikit-learn {sklearn.__version__}")
+    if sklearn.__version__ != "1.6.1":
+        raise RuntimeError("Install the pinned dependencies first: scikit-learn==1.6.1. The saved pipeline must be trained with the same version used by the Space.")
     print("Loading training and test data...")
     local_train = "data/processed/train.csv"
     local_test = "data/processed/test.csv"
@@ -194,8 +198,10 @@ def get_token():
 
 def upload_model_to_hf():
     print("Uploading model to Hugging Face...")
-    api = HfApi(token=token)
     token = get_token()
+    if not token:
+        raise RuntimeError("HF_TOKEN not found. Set it before uploading the model.")
+    api = HfApi(token=token)
     
     if token:
         try:
